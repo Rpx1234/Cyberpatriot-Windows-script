@@ -112,3 +112,64 @@ start C:\Windows\System32\lusrmgr.msc /wait
 else{break}
 
  
+#changes all users passwords
+$password = Read-Host -Prompt "Enter password for all users" -AsSecureString 
+$exclude = "Administrator","Guest","DefaultAccount"
+Get-LocalUser |
+  Where {$exclude -notcontains $_.Name} |
+    Set-Localuser -Password $password
+
+#auditing????
+    auditpol /set /category:"Account Logon" /success:enable 
+    auditpol /set /category:"Account Logon" /failure:enable
+    auditpol /set /category:"DS Access" /success:enable
+    auditpol /set /category:"DS Access" /failure:enable
+    auditpol /set /category:"Policy Change" /success:enable
+    auditpol /set /category:"Policy Change" /failure:enable
+    auditpol /set /category:"Logon/Logoff" /success:enable
+    auditpol /set /category:"Logon/Logoff" /failure:enable
+    auditpol /set /category:"Object Access" /success:enable
+    auditpol /set /category:"Object Access" /failure:enable
+    auditpol /set /category:"Privilege Use" /success:enable
+    auditpol /set /category:"Privilege Use" /failure:enable
+    auditpol /set /category:"Account Management" /success:enable
+    auditpol /set /category:"Account Management" /failure:enable
+    auditpol /set /category:"Detailed Tracking" /success:enable
+    auditpol /set /category:"Detailed Tracking" /failure:enable
+    auditpol /set /category:"System" /success:enable 
+    auditpol /set /category:"System" /failure:enable
+
+
+# firewall rules
+    New-NetFirewallRule -DisplayName "ssh" -Direction Inbound -LocalPort 22 -Protocol TCP -Action Block 
+    New-NetFirewallRule -DisplayName "ftp" -Direction Inbound -LocalPort 21 -Protocol TCP -Action Block 
+    New-NetFirewallRule -DisplayName "telnet" -Direction Inbound -LocalPort 23 -Protocol TCP -Action Block 
+    New-NetFirewallRule -DisplayName "SMTP" -Direction Inbound -LocalPort 25 -Protocol TCP -Action Block 
+    New-NetFirewallRule -DisplayName "SNMP" -Direction Inbound -LocalPort 161 -Protocol TCP -Action Block 
+    New-NetFirewallRule -DisplayName "RDP" -Direction Inbound -LocalPort 3389 -Protocol TCP -Action Block 
+
+
+# disable Internet explorer password caching
+reg ADD "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v DisablePasswordCaching /t REG_DWORD /d 1 /f
+
+# don't display last user username
+  reg ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v dontdisplaylastusername /t REG_DWORD /d 1 /f
+# enable ctrl+alt +del
+   reg ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v DisableCAD /t REG_DWORD /d 0 /f
+
+#boring internet stuff
+	reg ADD "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v WarnOnPostRedirect /t REG_DWORD /d 1 /f
+	reg ADD "HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings" /v WarnonBadCertRecving /t REG_DWORD /d 1 /f
+	reg ADD "HKCU\Software\Microsoft\Internet Explorer\PhishingFilter" /v EnabledV9 /t REG_DWORD /d 1 /f
+	reg ADD "HKCU\Software\Microsoft\Internet Explorer\PhishingFilter" /v EnabledV8 /t REG_DWORD /d 1 /f
+reg ADD "HKCU\Software\Microsoft\Internet Explorer\Main" /v DoNotTrack /t REG_DWORD /d 1 /f
+#audit
+	reg ADD HKLM\SYSTEM\CurrentControlSet\Control\Lsa /v auditbaseobjects /t REG_DWORD /d 1 /f
+#prevent print driver installs
+	reg ADD "HKLM\SYSTEM\CurrentControlSet\Control\Print\Providers\LanMan Print Services\Servers" /v AddPrinterDrivers /t REG_DWORD /d 1 /f
+#enable installer detection
+	reg ADD HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableInstallerDetection /t REG_DWORD /d 1 /f
+# clear DNS cache
+ipconfig /flushdns
+# don't allow remote access to floppie disks
+reg ADD "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AllocateFloppies /t REG_DWORD /d 1 /f
